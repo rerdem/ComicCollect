@@ -2,7 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QtGui/QMainWindow>
+#include <QtGui/QGridLayout>
+#include <QtGui/QLabel>
 #include <QString>
+#include <QListWidget>
 #include <QSqlDatabase>
 
 class MainWindow : public QMainWindow
@@ -17,7 +20,23 @@ class MainWindow : public QMainWindow
         QString collectionpath;
         QStringList dblist;
         QSqlDatabase db;
+
         QWidget *centralWidget;
+
+        QListWidget *seriesList;
+        QListWidget *issuesList;
+
+        QGridLayout *mainBox;
+        QGridLayout *issueBox;
+
+        QLabel *iNameLabel;
+        QLabel *iNumberLabel;
+        QLabel *iYearLabel;
+        QLabel *iSeriesLabel;
+        QLabel *iBoxLabel;
+        QLabel *iNumberAddLabel;
+        QLabel *iTagsLabel;
+        QLabel *iSerialLabel;
 
         void createInterface();
         void initialize();

@@ -2,6 +2,7 @@
 #include <QDir>
 #include <QtCore>
 #include <QtGui>
+#include <QListWidget>
 #include <QMessageBox>
 #include <QSqlQuery>
 #include "mainwindow.h"
@@ -36,6 +37,8 @@ void MainWindow::createInterface()
     centralWidget = new QWidget(this);
     this->setCentralWidget( centralWidget );
 
+    this->setFixedSize(800, 600);
+
     //this->setWindowState(Qt::WindowMaximized);
 
     //create file menu
@@ -48,6 +51,45 @@ void MainWindow::createInterface()
     //fileMenu->addAction(tr("&Load"), this, SLOT(load()));
     //fileMenu->addSeparator();
     fileMenu->addAction(tr("&Quit"), this, SLOT(close()));
+
+
+    seriesList = new QListWidget;
+    issuesList = new QListWidget;
+
+    iNameLabel = new QLabel(this);
+    iNumberLabel = new QLabel(this);
+    iYearLabel = new QLabel(this);
+    iSeriesLabel = new QLabel(this);
+    iBoxLabel = new QLabel(this);
+    iNumberAddLabel = new QLabel(this);
+    iTagsLabel = new QLabel(this);
+    iSerialLabel = new QLabel(this);
+
+    iNameLabel->setText("Name: Test");
+    iNumberLabel->setText("# 12");
+    iYearLabel->setText("Year: 2014");
+    iSeriesLabel->setText("Series: TestSeries");
+    iBoxLabel->setText("Box: 1");
+    iNumberAddLabel->setText("NumberAdd: LEER");;
+    iTagsLabel->setText("Tags: Action, Fantasy");
+    iSerialLabel->setText("Serial: 1TS12LEER");
+
+    issueBox = new QGridLayout();
+    issueBox->addWidget(iNameLabel, 0,1,1,1);
+    issueBox->addWidget(iNumberLabel, 0,2,1,1);
+    issueBox->addWidget(iSeriesLabel, 1,1,1,1);
+    issueBox->addWidget(iYearLabel, 1,3,1,1);
+    issueBox->addWidget(iBoxLabel, 2,1,1,1);
+    issueBox->addWidget(iNumberAddLabel, 2,3,1,1);
+    issueBox->addWidget(iSerialLabel, 3,1,1,1);
+    issueBox->addWidget(iTagsLabel, 4,1,1,3);
+
+    //create and fill Layout
+    mainBox = new QGridLayout(centralWidget);
+    mainBox->addWidget(seriesList, 1, 0, 5, 1);
+    mainBox->addWidget(issuesList, 1, 1, 5, 1);
+    mainBox->addLayout(issueBox, 1, 2);
+
 
 }
 
@@ -101,7 +143,7 @@ bool MainWindow::setupDb()
         {
             QSqlQuery query(db);
             query.exec("CREATE TABLE series (id INTEGER PRIMARY KEY, Name VARCHAR(512), Short VARCHAR(8))");
-            query.exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, Name VARCHAR(512), Number INTEGER, Year INTEGER, Series INTEGER, Box VARCHAR(16), NumberAdd VARCHAR(16), Tags VARCHAR(512))");
+            query.exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, Name VARCHAR(512), Number INTEGER, Year INTEGER, Series INTEGER, Box VARCHAR(16), NumberAdd VARCHAR(16), Tags VARCHAR(512), Serial VARCHAR(512))");
         }
     }
     else return false;
