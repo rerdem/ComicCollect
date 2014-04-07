@@ -18,6 +18,7 @@ class MainWindow : public QMainWindow
 
     private:
         QString collectionpath;
+        QString dbfilename;
         QStringList dblist;
         QSqlDatabase db;
 
@@ -31,6 +32,7 @@ class MainWindow : public QMainWindow
 
         QLabel *iNameLabel;
         QLabel *iNumberLabel;
+        QLabel *iPubLabel;
         QLabel *iYearLabel;
         QLabel *iSeriesLabel;
         QLabel *iBoxLabel;

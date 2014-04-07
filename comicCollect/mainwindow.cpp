@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     //read all filenames from collections into dblist
     dblist = path.entryList( QDir::Files, QDir::Name );
     collectionpath=QDir::currentPath() + QDir::separator() + "collections" + QDir::separator();
+    dbfilename="myCollection.db";
 
     initialize();
     createInterface();
@@ -58,6 +59,7 @@ void MainWindow::createInterface()
 
     iNameLabel = new QLabel(this);
     iNumberLabel = new QLabel(this);
+    iPubLabel = new QLabel(this);
     iYearLabel = new QLabel(this);
     iSeriesLabel = new QLabel(this);
     iBoxLabel = new QLabel(this);
@@ -67,20 +69,22 @@ void MainWindow::createInterface()
 
     iNameLabel->setText("Name: Test");
     iNumberLabel->setText("# 12");
+    iPubLabel->setText("Publisher: Marvel");
     iYearLabel->setText("Year: 2014");
     iSeriesLabel->setText("Series: TestSeries");
     iBoxLabel->setText("Box: 1");
-    iNumberAddLabel->setText("NumberAdd: LEER");;
+    iNumberAddLabel->setText("LEER");;
     iTagsLabel->setText("Tags: Action, Fantasy");
     iSerialLabel->setText("Serial: 1TS12LEER");
 
     issueBox = new QGridLayout();
     issueBox->addWidget(iNameLabel, 0,1,1,1);
     issueBox->addWidget(iNumberLabel, 0,2,1,1);
+    issueBox->addWidget(iNumberAddLabel, 0,3,1,1);
     issueBox->addWidget(iSeriesLabel, 1,1,1,1);
     issueBox->addWidget(iYearLabel, 1,3,1,1);
-    issueBox->addWidget(iBoxLabel, 2,1,1,1);
-    issueBox->addWidget(iNumberAddLabel, 2,3,1,1);
+    issueBox->addWidget(iPubLabel, 2,1,1,1);
+    issueBox->addWidget(iBoxLabel, 2,3,1,1);
     issueBox->addWidget(iSerialLabel, 3,1,1,1);
     issueBox->addWidget(iTagsLabel, 4,1,1,3);
 
@@ -89,6 +93,45 @@ void MainWindow::createInterface()
     mainBox->addWidget(seriesList, 1, 0, 5, 1);
     mainBox->addWidget(issuesList, 1, 1, 5, 1);
     mainBox->addLayout(issueBox, 1, 2);
+
+
+
+    //fülle wb1
+    QString dbpath;
+    QDir path = QDir::currentPath() + QDir::separator() +"collections";
+    dbpath = path.absolutePath() + QDir::separator() + dbfilename;
+    Q_ASSERT(dbpath.length()>0);
+
+    //nutze SQLITE
+    db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(dbpath);
+
+    if(db.open())
+    {
+        QSqlQuery query(db);
+        if (query.exec("SELECT Name FROM series"))
+        {
+            while (query.next())
+            {
+                QListWidgetItem *newItem = new QListWidgetItem;
+                newItem->setText(query.value(0).toString());
+                int row = seriesList->row(seriesList->currentItem());
+                seriesList->insertItem(row, newItem);
+            }
+        }
+        if (query.exec("SELECT Name, Number, NumberAdd FROM issues"))
+        {
+            while (query.next())
+            {
+                QListWidgetItem *newItem = new QListWidgetItem;
+                QString itemText=query.value(0).toString() + "#" + query.value(1).toString();
+                if (query.value(2).toString() != "") itemText += "." + query.value(2).toString();
+                newItem->setText(itemText);
+                int row = issuesList->row(issuesList->currentItem());
+                issuesList->insertItem(row, newItem);
+            }
+        }
+    }
 
 
 }
@@ -122,6 +165,7 @@ bool MainWindow::setupDb()
     Q_ASSERT(collectionpath.length()>0);
 
     QString dbname = QDir::currentPath() + QDir::separator() + "collections" + QDir::separator() + "myCollection.db";
+    dbfilename="myCollection.db";
 
     //nutze SQLITE
     db = QSqlDatabase::addDatabase("QSQLITE");
@@ -143,7 +187,7 @@ bool MainWindow::setupDb()
         {
             QSqlQuery query(db);
             query.exec("CREATE TABLE series (id INTEGER PRIMARY KEY, Name VARCHAR(512), Short VARCHAR(8))");
-            query.exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, Name VARCHAR(512), Number INTEGER, Year INTEGER, Series INTEGER, Box VARCHAR(16), NumberAdd VARCHAR(16), Tags VARCHAR(512), Serial VARCHAR(512))");
+            query.exec("CREATE TABLE issues (id INTEGER PRIMARY KEY, Name VARCHAR(512), Number INTEGER, Year INTEGER, Series INTEGER, Publisher VARCHAR(512), Box VARCHAR(16), NumberAdd VARCHAR(16), Tags VARCHAR(512), Serial VARCHAR(512))");
         }
     }
     else return false;
