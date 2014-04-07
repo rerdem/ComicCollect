@@ -6,6 +6,8 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QSqlQuery>
+//#include <QSqlRecord>
+//#include <QSqlTableModel>
 #include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -47,9 +49,9 @@ void MainWindow::createInterface()
     //create file menu
     QMenu *fileMenu = new QMenu(tr("&File"), this);
     menuBar()->addMenu(fileMenu);
-    fileMenu->addAction(tr("&About"), this, SLOT(close()));
+    fileMenu->addAction(tr("&About"), this, SLOT(about()));
     fileMenu->addSeparator();
-    //fileMenu->addAction(tr("&New Game"), this, SLOT(reset()));
+    fileMenu->addAction(tr("&Add Issue"), this, SLOT(addIssue()));
     //fileMenu->addAction(tr("&Save"), this, SLOT(save()));
     //fileMenu->addAction(tr("&Load"), this, SLOT(load()));
     //fileMenu->addSeparator();
@@ -101,8 +103,13 @@ void MainWindow::createInterface()
     mainBox->addWidget(issuesList, 1, 1, 5, 1);
     mainBox->addLayout(issueBox, 1, 2);
 
+    updateListWidgets();
+
+}
 
 
+void MainWindow::updateListWidgets()
+{
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -147,6 +154,124 @@ void MainWindow::createInterface()
     }
     seriesList->sortItems(Qt::AscendingOrder);
     issuesList->sortItems(Qt::AscendingOrder);
+}
+
+
+void MainWindow::addIssue()
+{
+    QDialog dialog(this);
+    // Use a layout allowing to have a label next to each field
+    QFormLayout form(&dialog);
+
+    // Add some text above the fields
+    form.addRow(new QLabel("Add a new issue:"));
+
+    QString label1 = QString("Name: ");
+    QString label2 = QString("Number: ");
+    QString label3 = QString("Year: ");
+    QString label4 = QString("Series: ");
+    QString label5 = QString("Publisher: ");
+    QString label6 = QString("Box: ");
+    QString label7 = QString("Number-Add-On: ");
+    QString label8 = QString("Tags: ");
+
+    QLineEdit *lineEdit1 = new QLineEdit(&dialog);
+    QSpinBox *lineEdit2 = new QSpinBox(&dialog);
+    lineEdit2->setMinimum(-999999999);
+    lineEdit2->setMaximum(999999999);
+    QSpinBox *lineEdit3 = new QSpinBox(&dialog);
+    lineEdit3->setMinimum(0);
+    lineEdit3->setMaximum(9999);
+    QLineEdit *lineEdit4 = new QLineEdit(&dialog);
+    QLineEdit *lineEdit5 = new QLineEdit(&dialog);
+    QSpinBox *lineEdit6 = new QSpinBox(&dialog);
+    lineEdit6->setMinimum(-999999999);
+    lineEdit6->setMaximum(999999999);
+    QLineEdit *lineEdit7 = new QLineEdit(&dialog);
+    QLineEdit *lineEdit8 = new QLineEdit(&dialog);
+
+    form.addRow(label1, lineEdit1);
+    form.addRow(label2, lineEdit2);
+    form.addRow(label3, lineEdit3);
+    form.addRow(label4, lineEdit4);
+    form.addRow(label5, lineEdit5);
+    form.addRow(label6, lineEdit6);
+    form.addRow(label7, lineEdit7);
+    form.addRow(label8, lineEdit8);
+
+
+
+    /**
+    QStringList labels;
+    labels << "Name" << "Number" << "Times" << "Courier";
+
+    // Add the lineEdits with their respective labels
+    QList<QLineEdit *> fields;
+    for(int i = 0; i < 9; ++i) {
+        QLineEdit *lineEdit = new QLineEdit(&dialog);
+        QString label = QString("Value %1").arg(i + 1);
+        form.addRow(label, lineEdit);
+
+        fields << lineEdit;
+    }
+    **/
+
+    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                               Qt::Horizontal, &dialog);
+    form.addRow(&buttonBox);
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+
+    // Show the dialog as modal
+    if (dialog.exec() == QDialog::Accepted) {
+        // If the user didn't dismiss the dialog, do something with the fields
+        //set dbpath
+        QString dbpath;
+        QDir path = QDir::currentPath() + QDir::separator() +"collections";
+        dbpath = path.absolutePath() + QDir::separator() + dbfilename;
+        Q_ASSERT(dbpath.length()>0);
+
+        //use SQLITE
+        db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName(dbpath);
+
+
+
+        if(db.open())
+        {
+            QSqlQuery query(db);
+            //fill issues with all issues
+
+            QString tempString=lineEdit6->value() + lineEdit4->text();
+
+            query.prepare("SELECT Short FROM series WHERE Name=:name");
+            query.bindValue(":name", lineEdit4->text());
+            if (query.exec())
+                while (query.next()) tempString += query.value(0).toString();
+
+            tempString += lineEdit2->value() + lineEdit7->text();
+
+            query.prepare("INSERT INTO issues ('Name','Number','Year','Series',Publisher','Box','NumberAdd','Tags','Serial') VALUES (:name,:number,:year,:series,:publisher,:box,:numberadd,:tags,:serial)");
+            query.bindValue(":name", lineEdit1->text());
+            query.bindValue(":number", lineEdit2->value());
+            query.bindValue(":year", lineEdit3->value());
+            query.bindValue(":series", lineEdit4->text());
+            query.bindValue(":publisher", lineEdit5->text());
+            query.bindValue(":box", lineEdit6->value());
+            query.bindValue(":numberadd", lineEdit7->text());
+            query.bindValue(":tags", lineEdit8->text());
+            query.bindValue(":serial", tempString);
+            query.exec();
+        }
+        updateListWidgets();
+
+
+
+        //foreach(QLineEdit * lineEdit, fields) {
+        //    qDebug() << lineEdit->text();
+        //}
+    }
 }
 
 
@@ -299,3 +424,7 @@ bool MainWindow::setupDb()
     return true;
 }
 
+void MainWindow::about()
+{
+    QMessageBox::information(this, "About", "This application was created by Rona Erdem.");
+}

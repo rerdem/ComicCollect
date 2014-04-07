@@ -40,12 +40,14 @@ class MainWindow : public QMainWindow
         QLabel *iTagsLabel;
         QLabel *iSerialLabel;
 
+        void updateListWidgets();
         void createInterface();
         void initialize();
         bool setupDb();
 
-
     private slots:
+        void about();
+        void addIssue();
         void updateIssueList(QListWidgetItem *item);
         void updateIssueInfo(QListWidgetItem *item);
 };
