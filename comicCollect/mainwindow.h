@@ -46,6 +46,8 @@ class MainWindow : public QMainWindow
 
 
     private slots:
+        void updateIssueList(QListWidgetItem *item);
+        void updateIssueInfo(QListWidgetItem *item);
 };
 
 #endif // MAINWINDOW_H

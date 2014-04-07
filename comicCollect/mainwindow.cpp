@@ -1,4 +1,5 @@
 #include <QString>
+#include <QStringList>
 #include <QDir>
 #include <QtCore>
 #include <QtGui>
@@ -27,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 }
 
+
 MainWindow::~MainWindow()
 {
     
@@ -38,7 +40,7 @@ void MainWindow::createInterface()
     centralWidget = new QWidget(this);
     this->setCentralWidget( centralWidget );
 
-    this->setFixedSize(800, 600);
+    //this->setFixedSize(800, 600);
 
     //this->setWindowState(Qt::WindowMaximized);
 
@@ -55,7 +57,12 @@ void MainWindow::createInterface()
 
 
     seriesList = new QListWidget;
+    seriesList->setSelectionMode(QAbstractItemView::SingleSelection);
+    connect(seriesList, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(updateIssueList(QListWidgetItem *)));
+
     issuesList = new QListWidget;
+    issuesList->setSelectionMode(QAbstractItemView::SingleSelection);
+    connect(issuesList, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(updateIssueInfo(QListWidgetItem *)));
 
     iNameLabel = new QLabel(this);
     iNumberLabel = new QLabel(this);
@@ -67,15 +74,15 @@ void MainWindow::createInterface()
     iTagsLabel = new QLabel(this);
     iSerialLabel = new QLabel(this);
 
-    iNameLabel->setText("Name: Test");
-    iNumberLabel->setText("# 12");
-    iPubLabel->setText("Publisher: Marvel");
-    iYearLabel->setText("Year: 2014");
-    iSeriesLabel->setText("Series: TestSeries");
-    iBoxLabel->setText("Box: 1");
-    iNumberAddLabel->setText("LEER");;
-    iTagsLabel->setText("Tags: Action, Fantasy");
-    iSerialLabel->setText("Serial: 1TS12LEER");
+    iNameLabel->setText("Name: ");
+    iNumberLabel->setText("#");
+    iPubLabel->setText("Publisher: ");
+    iYearLabel->setText("Year: ");
+    iSeriesLabel->setText("Series: ");
+    iBoxLabel->setText("Box: ");
+    iNumberAddLabel->setText("");;
+    iTagsLabel->setText("Tags: ");
+    iSerialLabel->setText("Serial: ");
 
     issueBox = new QGridLayout();
     issueBox->addWidget(iNameLabel, 0,1,1,1);
@@ -96,18 +103,19 @@ void MainWindow::createInterface()
 
 
 
-    //fülle wb1
+    //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
     dbpath = path.absolutePath() + QDir::separator() + dbfilename;
     Q_ASSERT(dbpath.length()>0);
 
-    //nutze SQLITE
+    //use SQLITE
     db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName(dbpath);
 
     if(db.open())
     {
+        //fill series list with all series
         QSqlQuery query(db);
         if (query.exec("SELECT Name FROM series"))
         {
@@ -118,13 +126,18 @@ void MainWindow::createInterface()
                 int row = seriesList->row(seriesList->currentItem());
                 seriesList->insertItem(row, newItem);
             }
+            QListWidgetItem *newItem = new QListWidgetItem;
+            newItem->setText("###All###");
+            int row = seriesList->row(seriesList->currentItem());
+            seriesList->insertItem(row, newItem);
         }
+        //fill issues with all issues
         if (query.exec("SELECT Name, Number, NumberAdd FROM issues"))
         {
             while (query.next())
             {
                 QListWidgetItem *newItem = new QListWidgetItem;
-                QString itemText=query.value(0).toString() + "#" + query.value(1).toString();
+                QString itemText=query.value(0).toString() + " #" + query.value(1).toString();
                 if (query.value(2).toString() != "") itemText += "." + query.value(2).toString();
                 newItem->setText(itemText);
                 int row = issuesList->row(issuesList->currentItem());
@@ -132,9 +145,105 @@ void MainWindow::createInterface()
             }
         }
     }
-
-
+    seriesList->sortItems(Qt::AscendingOrder);
+    issuesList->sortItems(Qt::AscendingOrder);
 }
+
+
+void MainWindow::updateIssueList(QListWidgetItem *item)
+{
+    issuesList->clear();
+    //set dbpath
+    QString dbpath;
+    QDir path = QDir::currentPath() + QDir::separator() +"collections";
+    dbpath = path.absolutePath() + QDir::separator() + dbfilename;
+    Q_ASSERT(dbpath.length()>0);
+
+    //use SQLITE
+    db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(dbpath);
+
+    QString itemText = item->text();
+
+    if(db.open())
+    {
+        QSqlQuery query(db);
+        //fill issues with all issues
+        if (itemText=="###All###") query.prepare("SELECT Name, Number, NumberAdd FROM issues");
+        else
+        {
+            query.prepare("SELECT Name, Number, NumberAdd FROM issues WHERE Series = :series_name");
+            query.bindValue(":series_name", itemText);
+        }
+        if (query.exec())
+        {
+            while (query.next())
+            {
+                QListWidgetItem *newItem = new QListWidgetItem;
+                QString itemText=query.value(0).toString() + " #" + query.value(1).toString();
+                if (query.value(2).toString() != "") itemText += "." + query.value(2).toString();
+                newItem->setText(itemText);
+                int row = issuesList->row(issuesList->currentItem());
+                issuesList->insertItem(row, newItem);
+            }
+        }
+    }
+    issuesList->sortItems(Qt::AscendingOrder);
+}
+
+
+void MainWindow::updateIssueInfo(QListWidgetItem *item)
+{
+    //set dbpath
+    QString dbpath;
+    QDir path = QDir::currentPath() + QDir::separator() +"collections";
+    dbpath = path.absolutePath() + QDir::separator() + dbfilename;
+    Q_ASSERT(dbpath.length()>0);
+
+    //use SQLITE
+    db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(dbpath);
+
+    QString itemText = item->text();
+    QStringList splitOne = itemText.split(" #");
+    QStringList splitTwo = splitOne.at(1).split(".");
+
+    if(db.open())
+    {
+        QSqlQuery query(db);
+        //fill issues with all issues
+        if (splitTwo.length() > 1)
+        {
+            qDebug() << splitTwo.at(1);
+            query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
+            query.bindValue(":series_name", splitOne.at(0));
+            query.bindValue(":number", splitTwo.at(0));
+            query.bindValue(":number_add", splitTwo.at(1));
+        }
+        else
+        {
+            query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number");
+            query.bindValue(":series_name", splitOne.at(0));
+            query.bindValue(":number", splitTwo.at(0));
+        }
+        if (query.exec())
+        {
+            while (query.next())
+            {
+                iNameLabel->setText("Name: " + query.value(1).toString());
+                iNumberLabel->setText("#" + query.value(2).toString());
+                iPubLabel->setText("Publisher: " + query.value(5).toString());
+                iYearLabel->setText("Year: " + query.value(3).toString());
+                iSeriesLabel->setText("Series: " + query.value(4).toString());
+                iBoxLabel->setText("Box: " + query.value(6).toString());
+                iNumberAddLabel->setText(query.value(7).toString());;
+                iTagsLabel->setText("Tags: " + query.value(8).toString());
+                iSerialLabel->setText("Serial: " + query.value(9).toString());
+            }
+        }
+    }
+}
+
 
 void MainWindow::initialize()
 {
@@ -154,10 +263,6 @@ void MainWindow::initialize()
         }
     }
 }
-
-
-
-
 
 
 bool MainWindow::setupDb()
