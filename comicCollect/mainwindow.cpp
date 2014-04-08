@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QString>
 #include <QStringList>
 #include <QDir>
@@ -6,6 +7,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QSqlQuery>
+#include <QSqlError>
 //#include <QSqlRecord>
 //#include <QSqlTableModel>
 #include "mainwindow.h"
@@ -52,7 +54,8 @@ void MainWindow::createInterface()
     fileMenu->addAction(tr("&About"), this, SLOT(about()));
     fileMenu->addSeparator();
     fileMenu->addAction(tr("&Add Issue"), this, SLOT(addIssue()));
-    //fileMenu->addAction(tr("&Save"), this, SLOT(save()));
+    fileMenu->addAction(tr("&Edit Issue"), this, SLOT(editIssue()));
+    fileMenu->addAction(tr("&Delete Issue"), this, SLOT(delIssue()));
     //fileMenu->addAction(tr("&Load"), this, SLOT(load()));
     //fileMenu->addSeparator();
     fileMenu->addAction(tr("&Quit"), this, SLOT(close()));
@@ -110,6 +113,8 @@ void MainWindow::createInterface()
 
 void MainWindow::updateListWidgets()
 {
+    seriesList->clear();
+    issuesList->clear();
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -154,6 +159,218 @@ void MainWindow::updateListWidgets()
     }
     seriesList->sortItems(Qt::AscendingOrder);
     issuesList->sortItems(Qt::AscendingOrder);
+
+    lastSeries = seriesList->item(0);
+    lastIssue = issuesList->item(0);
+}
+
+
+void MainWindow::delIssue()
+{
+    if (lastIssue->text()==0) QMessageBox::information(this, "Error", "No issue selected.");
+    else
+    {
+        QString itemText = lastIssue->text();
+        QStringList splitOne = itemText.split(" #");
+        QStringList splitTwo = splitOne.at(1).split(".");
+
+        int tempID=0;
+
+        //set dbpath
+        QString dbpath;
+        QDir path = QDir::currentPath() + QDir::separator() +"collections";
+        dbpath = path.absolutePath() + QDir::separator() + dbfilename;
+        Q_ASSERT(dbpath.length()>0);
+
+        //use SQLITE
+        db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName(dbpath);
+
+
+
+        if(db.open())
+        {
+
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Are you sure?");
+            msgBox.setText("Are you sure you wish to delete this item?");
+            msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+            msgBox.setDefaultButton(QMessageBox::Cancel);
+
+
+
+            QSqlQuery query(db);
+            //fill issues with all issues
+            if (splitTwo.length() > 1)
+            {
+                //qDebug() << splitTwo.at(1);
+                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
+                query.bindValue(":series_name", splitOne.at(0));
+                query.bindValue(":number", splitTwo.at(0));
+                query.bindValue(":number_add", splitTwo.at(1));
+            }
+            else
+            {
+                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number");
+                query.bindValue(":series_name", splitOne.at(0));
+                query.bindValue(":number", splitTwo.at(0));
+            }
+            if (query.exec())
+                while (query.next()) tempID=query.value(0).toInt();
+
+
+
+            // Show the dialog as modal
+            if(msgBox.exec() == QMessageBox::Ok)
+            {
+                // If the user didn't dismiss the dialog, do something
+                query.prepare("DELETE FROM issues WHERE id=:id");
+                query.bindValue(":id", tempID);
+                if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
+
+                updateListWidgets();
+            }
+        }
+    }
+}
+
+
+void MainWindow::editIssue()
+{
+    if (lastIssue->text()==0) QMessageBox::information(this, "Error", "No issue selected.");
+    else
+    {
+        QString itemText = lastIssue->text();
+        QStringList splitOne = itemText.split(" #");
+        QStringList splitTwo = splitOne.at(1).split(".");
+
+        int tempID=0;
+
+        //set dbpath
+        QString dbpath;
+        QDir path = QDir::currentPath() + QDir::separator() +"collections";
+        dbpath = path.absolutePath() + QDir::separator() + dbfilename;
+        Q_ASSERT(dbpath.length()>0);
+
+        //use SQLITE
+        db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName(dbpath);
+
+
+
+        if(db.open())
+        {
+
+            QDialog dialog(this);
+            // Use a layout allowing to have a label next to each field
+            QFormLayout form(&dialog);
+
+            // Add some text above the fields
+            form.addRow(new QLabel("Add a new issue:"));
+
+            QString label1 = QString("Name: ");
+            QString label2 = QString("Number: ");
+            QString label3 = QString("Year: ");
+            QString label4 = QString("Series: ");
+            QString label5 = QString("Publisher: ");
+            QString label6 = QString("Box: ");
+            QString label7 = QString("Number-Add-On: ");
+            QString label8 = QString("Tags: ");
+
+            QLineEdit *lineEdit1 = new QLineEdit(&dialog);
+            QSpinBox *lineEdit2 = new QSpinBox(&dialog);
+            lineEdit2->setMinimum(-999999999);
+            lineEdit2->setMaximum(999999999);
+            QSpinBox *lineEdit3 = new QSpinBox(&dialog);
+            lineEdit3->setMinimum(0);
+            lineEdit3->setMaximum(9999);
+            QLineEdit *lineEdit4 = new QLineEdit(&dialog);
+            QLineEdit *lineEdit5 = new QLineEdit(&dialog);
+            QSpinBox *lineEdit6 = new QSpinBox(&dialog);
+            lineEdit6->setMinimum(-999999999);
+            lineEdit6->setMaximum(999999999);
+            QLineEdit *lineEdit7 = new QLineEdit(&dialog);
+            QLineEdit *lineEdit8 = new QLineEdit(&dialog);
+
+            QSqlQuery query(db);
+            //fill issues with all issues
+            if (splitTwo.length() > 1)
+            {
+                //qDebug() << splitTwo.at(1);
+                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
+                query.bindValue(":series_name", splitOne.at(0));
+                query.bindValue(":number", splitTwo.at(0));
+                query.bindValue(":number_add", splitTwo.at(1));
+            }
+            else
+            {
+                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number");
+                query.bindValue(":series_name", splitOne.at(0));
+                query.bindValue(":number", splitTwo.at(0));
+            }
+            if (query.exec())
+            {
+                while (query.next())
+                {
+                    tempID=query.value(0).toInt();
+                    lineEdit1->setText(query.value(1).toString());
+                    lineEdit2->setValue(query.value(2).toInt());
+                    lineEdit5->setText(query.value(5).toString());
+                    lineEdit3->setValue(query.value(3).toInt());
+                    lineEdit4->setText(query.value(4).toString());
+                    lineEdit6->setValue(query.value(6).toInt());
+                    lineEdit7->setText(query.value(7).toString());
+                    lineEdit8->setText(query.value(8).toString());
+                }
+            }
+
+
+            form.addRow(label1, lineEdit1);
+            form.addRow(label2, lineEdit2);
+            form.addRow(label3, lineEdit3);
+            form.addRow(label4, lineEdit4);
+            form.addRow(label5, lineEdit5);
+            form.addRow(label6, lineEdit6);
+            form.addRow(label7, lineEdit7);
+            form.addRow(label8, lineEdit8);
+
+            // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+            QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                                       Qt::Horizontal, &dialog);
+            form.addRow(&buttonBox);
+            QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+            QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+
+            // Show the dialog as modal
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                // If the user didn't dismiss the dialog, do something with the fields
+                QString tempString=QString::number(lineEdit6->value());
+                query.prepare("SELECT Short FROM series WHERE Name=:name");
+                query.bindValue(":name", lineEdit4->text());
+                if (query.exec())
+                    while (query.next()) tempString += query.value(0).toString();
+
+                tempString += QString::number(lineEdit2->value());
+                tempString += lineEdit7->text();
+
+                query.prepare("UPDATE issues SET Name=:name,Number=:number,Year=:year,Series=:series,Publisher=:publisher,Box=:box,NumberAdd=:numberadd,Tags=:tags,Serial=:serial WHERE id=:id");
+                query.bindValue(":id", tempID);
+                query.bindValue(":name", lineEdit1->text());
+                query.bindValue(":number", QString::number(lineEdit2->value()));
+                query.bindValue(":year", QString::number(lineEdit3->value()));
+                query.bindValue(":series", lineEdit4->text());
+                query.bindValue(":publisher", lineEdit5->text());
+                query.bindValue(":box", QString::number(lineEdit6->value()));
+                query.bindValue(":numberadd", lineEdit7->text());
+                query.bindValue(":tags", lineEdit8->text());
+                query.bindValue(":serial", tempString);
+                if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
+
+                updateListWidgets();
+            }
+        }
+    }
 }
 
 
@@ -201,21 +418,6 @@ void MainWindow::addIssue()
 
 
 
-    /**
-    QStringList labels;
-    labels << "Name" << "Number" << "Times" << "Courier";
-
-    // Add the lineEdits with their respective labels
-    QList<QLineEdit *> fields;
-    for(int i = 0; i < 9; ++i) {
-        QLineEdit *lineEdit = new QLineEdit(&dialog);
-        QString label = QString("Value %1").arg(i + 1);
-        form.addRow(label, lineEdit);
-
-        fields << lineEdit;
-    }
-    **/
-
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                Qt::Horizontal, &dialog);
@@ -243,34 +445,42 @@ void MainWindow::addIssue()
             QSqlQuery query(db);
             //fill issues with all issues
 
-            QString tempString=lineEdit6->value() + lineEdit4->text();
+            QString tempString=QString::number(lineEdit6->value());
 
             query.prepare("SELECT Short FROM series WHERE Name=:name");
             query.bindValue(":name", lineEdit4->text());
             if (query.exec())
                 while (query.next()) tempString += query.value(0).toString();
 
-            tempString += lineEdit2->value() + lineEdit7->text();
+            tempString += QString::number(lineEdit2->value());
+            tempString += lineEdit7->text();
 
-            query.prepare("INSERT INTO issues ('Name','Number','Year','Series',Publisher','Box','NumberAdd','Tags','Serial') VALUES (:name,:number,:year,:series,:publisher,:box,:numberadd,:tags,:serial)");
+            query.prepare("INSERT INTO issues (Name,Number,Year,Series,Publisher,Box,NumberAdd,Tags,Serial) VALUES (:name,:number,:year,:series,:publisher,:box,:numberadd,:tags,:serial)");
             query.bindValue(":name", lineEdit1->text());
-            query.bindValue(":number", lineEdit2->value());
-            query.bindValue(":year", lineEdit3->value());
+            query.bindValue(":number", QString::number(lineEdit2->value()));
+            query.bindValue(":year", QString::number(lineEdit3->value()));
             query.bindValue(":series", lineEdit4->text());
             query.bindValue(":publisher", lineEdit5->text());
-            query.bindValue(":box", lineEdit6->value());
+            query.bindValue(":box", QString::number(lineEdit6->value()));
             query.bindValue(":numberadd", lineEdit7->text());
             query.bindValue(":tags", lineEdit8->text());
             query.bindValue(":serial", tempString);
-            query.exec();
+            if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
+
+            /**
+            qDebug() << query.lastError().text();
+            qDebug() << lineEdit1->text();
+            qDebug() << lineEdit2->value();
+            qDebug() << lineEdit3->value();
+            qDebug() << lineEdit4->text();
+            qDebug() << lineEdit5->text();
+            qDebug() << lineEdit6->value();
+            qDebug() << lineEdit7->text();
+            qDebug() << lineEdit8->text();
+            qDebug() << tempString;
+            **/
         }
         updateListWidgets();
-
-
-
-        //foreach(QLineEdit * lineEdit, fields) {
-        //    qDebug() << lineEdit->text();
-        //}
     }
 }
 
@@ -278,6 +488,7 @@ void MainWindow::addIssue()
 void MainWindow::updateIssueList(QListWidgetItem *item)
 {
     issuesList->clear();
+    lastSeries=item;
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -319,6 +530,7 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
 
 void MainWindow::updateIssueInfo(QListWidgetItem *item)
 {
+    lastIssue=item;
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -339,7 +551,7 @@ void MainWindow::updateIssueInfo(QListWidgetItem *item)
         //fill issues with all issues
         if (splitTwo.length() > 1)
         {
-            qDebug() << splitTwo.at(1);
+            //qDebug() << splitTwo.at(1);
             query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
             query.bindValue(":series_name", splitOne.at(0));
             query.bindValue(":number", splitTwo.at(0));
@@ -361,7 +573,7 @@ void MainWindow::updateIssueInfo(QListWidgetItem *item)
                 iYearLabel->setText("Year: " + query.value(3).toString());
                 iSeriesLabel->setText("Series: " + query.value(4).toString());
                 iBoxLabel->setText("Box: " + query.value(6).toString());
-                iNumberAddLabel->setText(query.value(7).toString());;
+                iNumberAddLabel->setText(query.value(7).toString());
                 iTagsLabel->setText("Tags: " + query.value(8).toString());
                 iSerialLabel->setText("Serial: " + query.value(9).toString());
             }
@@ -387,6 +599,8 @@ void MainWindow::initialize()
             dblist = path.entryList( QDir::Files, QDir::Name );
         }
     }
+    lastSeries = new QListWidgetItem;
+    lastIssue = new QListWidgetItem;
 }
 
 

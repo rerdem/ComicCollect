@@ -27,6 +27,9 @@ class MainWindow : public QMainWindow
         QListWidget *seriesList;
         QListWidget *issuesList;
 
+        QListWidgetItem *lastSeries;
+        QListWidgetItem *lastIssue;
+
         QGridLayout *mainBox;
         QGridLayout *issueBox;
 
@@ -48,6 +51,8 @@ class MainWindow : public QMainWindow
     private slots:
         void about();
         void addIssue();
+        void editIssue();
+        void delIssue();
         void updateIssueList(QListWidgetItem *item);
         void updateIssueInfo(QListWidgetItem *item);
 };
