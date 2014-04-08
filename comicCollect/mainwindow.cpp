@@ -179,8 +179,7 @@ void MainWindow::delSeries()
     if (lastSeries->text()==0) QMessageBox::information(this, "Error", "No issue selected.");
     else
     {
-        int tempID=0;
-
+        bool deleteIssues=false;
         //set dbpath
         QString dbpath;
         QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -193,32 +192,39 @@ void MainWindow::delSeries()
 
         if(db.open())
         {
+            QMessageBox delBox;
+            delBox.setWindowTitle("Do you...?");
+            delBox.setText("Do you want to delete all issues within this series?");
+            delBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            delBox.setDefaultButton(QMessageBox::No);
+
+
+            // Show the dialog as modal
+            if(delBox.exec() == QMessageBox::Yes) deleteIssues=true;
+
+
 
             QMessageBox msgBox;
             msgBox.setWindowTitle("Are you sure?");
-            msgBox.setText("Are you sure you wish to delete this item?");
+            msgBox.setText("Do you still want to delete the series?");
             msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
             msgBox.setDefaultButton(QMessageBox::Cancel);
-
-
-
-            QSqlQuery query(db);
-            //fill issues with all issues
-            query.prepare("SELECT * FROM series WHERE Name = :name");
-            query.bindValue(":name", lastSeries->text());
-
-            if (query.exec())
-                while (query.next()) tempID=query.value(0).toInt();
-
 
 
             // Show the dialog as modal
             if(msgBox.exec() == QMessageBox::Ok)
             {
+                QSqlQuery query(db);
                 // If the user didn't dismiss the dialog, do something
-                query.prepare("DELETE FROM series WHERE id=:id");
-                query.bindValue(":id", tempID);
+                query.prepare("DELETE FROM series WHERE Name = :name");
+                query.bindValue(":name", lastSeries->text());
                 if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
+                if (deleteIssues)
+                {
+                    query.prepare("DELETE FROM issues WHERE Series = :name");
+                    query.bindValue(":name", lastSeries->text());
+                    if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
+                }
 
                 updateListWidgets();
             }
