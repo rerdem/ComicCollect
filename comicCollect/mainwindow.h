@@ -50,6 +50,11 @@ class MainWindow : public QMainWindow
 
     private slots:
         void about();
+
+        void addSeries();
+        void editSeries();
+        void delSeries();
+
         void addIssue();
         void editIssue();
         void delIssue();
