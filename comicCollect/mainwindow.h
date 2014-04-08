@@ -58,6 +58,8 @@ class MainWindow : public QMainWindow
         void addIssue();
         void editIssue();
         void delIssue();
+        void bulkAddIssue();
+
         void updateIssueList(QListWidgetItem *item);
         void updateIssueInfo(QListWidgetItem *item);
 };
