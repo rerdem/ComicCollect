@@ -773,13 +773,14 @@ void MainWindow::bulkAddIssue()
 
             int numberCounter=lineEdit22->value()-lineEdit2->value()+1;
 
-            QString tempString=QString::number(lineEdit6->value());
-            tempString += QString::number(lineEdit2->value());
-            tempString += lineEdit7->text();
-
             db.transaction();
             for (int i=0; i<numberCounter; i++)
             {
+                QString tempString=QString::number(lineEdit6->value());
+                tempString += shortForm;
+                tempString += QString::number(lineEdit2->value()+i);
+                tempString += lineEdit7->text();
+
                 query.prepare("INSERT INTO issues (Name,Number,Year,Series,Publisher,Box,NumberAdd,Tags,Serial) VALUES (:name,:number,:year,:series,:publisher,:box,:numberadd,:tags,:serial)");
                 query.bindValue(":name", lineEdit1->text());
                 query.bindValue(":number", QString::number(lineEdit2->value()+i));
