@@ -408,15 +408,15 @@ void MainWindow::delIssue()
             if (splitTwo.length() > 1)
             {
                 //qDebug() << splitTwo.at(1);
-                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
-                query.bindValue(":series_name", splitOne.at(0));
+                query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number AND NumberAdd = :number_add");
+                query.bindValue(":name", splitOne.at(0));
                 query.bindValue(":number", splitTwo.at(0));
                 query.bindValue(":number_add", splitTwo.at(1));
             }
             else
             {
-                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number");
-                query.bindValue(":series_name", splitOne.at(0));
+                query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number");
+                query.bindValue(":name", splitOne.at(0));
                 query.bindValue(":number", splitTwo.at(0));
             }
             if (query.exec())
@@ -501,15 +501,15 @@ void MainWindow::editIssue()
             if (splitTwo.length() > 1)
             {
                 //qDebug() << splitTwo.at(1);
-                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
-                query.bindValue(":series_name", splitOne.at(0));
+                query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number AND NumberAdd = :number_add");
+                query.bindValue(":name", splitOne.at(0));
                 query.bindValue(":number", splitTwo.at(0));
                 query.bindValue(":number_add", splitTwo.at(1));
             }
             else
             {
-                query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number");
-                query.bindValue(":series_name", splitOne.at(0));
+                query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number");
+                query.bindValue(":name", splitOne.at(0));
                 query.bindValue(":number", splitTwo.at(0));
             }
             if (query.exec())
@@ -872,15 +872,15 @@ void MainWindow::updateIssueInfo(QListWidgetItem *item)
         if (splitTwo.length() > 1)
         {
             //qDebug() << splitTwo.at(1);
-            query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number AND NumberAdd = :number_add");
-            query.bindValue(":series_name", splitOne.at(0));
+            query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number AND NumberAdd = :number_add");
+            query.bindValue(":name", splitOne.at(0));
             query.bindValue(":number", splitTwo.at(0));
             query.bindValue(":number_add", splitTwo.at(1));
         }
         else
         {
-            query.prepare("SELECT * FROM issues WHERE Series = :series_name AND Number = :number");
-            query.bindValue(":series_name", splitOne.at(0));
+            query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number");
+            query.bindValue(":name", splitOne.at(0));
             query.bindValue(":number", splitTwo.at(0));
         }
         if (query.exec())
