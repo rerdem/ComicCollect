@@ -152,6 +152,10 @@ void MainWindow::updateListWidgets()
             newItem->setText("###All###");
             int row = seriesList->row(seriesList->currentItem());
             seriesList->insertItem(row, newItem);
+            QListWidgetItem *newItem2 = new QListWidgetItem;
+            newItem2->setText("###Empty###");
+            row = seriesList->row(seriesList->currentItem());
+            seriesList->insertItem(row, newItem2);
         }
         //fill issues with all issues
         if (query.exec("SELECT Name, Number, NumberAdd FROM issues"))
@@ -179,7 +183,7 @@ void MainWindow::updateListWidgets()
 
 void MainWindow::delSeries()
 {
-    if (seriesList->count()==0) QMessageBox::information(this, "Error", "No issue selected.");
+    if ((seriesList->count()==0) || (lastSeries->text()=="###All###") || (lastSeries->text()=="###Empty###")) QMessageBox::information(this, "Error", "No series selected.");
     else
     {
         bool deleteIssues=false;
@@ -238,7 +242,7 @@ void MainWindow::delSeries()
 
 void MainWindow::editSeries()
 {
-    if (seriesList->count()==0) QMessageBox::information(this, "Error", "No series selected.");
+    if ((seriesList->count()==0) || (lastSeries->text()=="###All###") || (lastSeries->text()=="###Empty###")) QMessageBox::information(this, "Error", "No series selected.");
     else
     {
         int tempID=0;
@@ -870,8 +874,16 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
         if (itemText=="###All###") query.prepare("SELECT Name, Number, NumberAdd FROM issues");
         else
         {
-            query.prepare("SELECT Name, Number, NumberAdd FROM issues WHERE Series = :series_name");
-            query.bindValue(":series_name", itemText);
+            if (itemText=="###Empty###")
+            {
+                query.prepare("SELECT Name, Number, NumberAdd FROM issues WHERE Series = :series_name");
+                query.bindValue(":series_name", "");
+            }
+            else
+            {
+                query.prepare("SELECT Name, Number, NumberAdd FROM issues WHERE Series = :series_name");
+                query.bindValue(":series_name", itemText);
+            }
         }
         if (query.exec())
         {
