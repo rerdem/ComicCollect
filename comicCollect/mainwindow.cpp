@@ -6,6 +6,7 @@
 #include <QtGui>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QVector>
 #include <QSqlQuery>
 #include <QSqlError>
 //#include <QSqlRecord>
@@ -241,6 +242,7 @@ void MainWindow::editSeries()
     else
     {
         int tempID=0;
+        QString oldName="";
 
         //set dbpath
         QString dbpath;
@@ -282,6 +284,7 @@ void MainWindow::editSeries()
                 {
                     tempID=query.value(0).toInt();
                     lineEdit1->setText(query.value(1).toString());
+                    oldName=query.value(1).toString();
                     lineEdit2->setText(query.value(2).toString());
                 }
             }
@@ -304,9 +307,50 @@ void MainWindow::editSeries()
                 query.bindValue(":short", lineEdit2->text());
                 if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
 
+
+
+                QVector<int> idVector;
+                QVector<QString> serialVector;
+
+
+
+                query.prepare("SELECT id,Box,Number,NumberAdd FROM issues WHERE Series = :series");
+                query.bindValue(":series", oldName);
+
+                if (query.exec())
+                {
+                    while (query.next())
+                    {
+                        idVector.append(query.value(0).toInt());
+                        QString tempString=query.value(1).toString();
+                        tempString += lineEdit2->text();
+                        tempString += query.value(2).toString();
+                        tempString += query.value(3).toString();
+                        serialVector.append(tempString);
+
+                        //qDebug() << tempString;
+                    }
+                }
+
+                for (int i = 0; i < idVector.size(); i++)
+                {
+
+                    query.prepare("UPDATE issues SET Series=:series,Serial=:serial WHERE id=:id");
+                    query.bindValue(":id", idVector.at(i));
+                    query.bindValue(":series", lineEdit1->text());
+                    query.bindValue(":serial", serialVector.at(i));
+                    if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
+                }
+
+
+
                 //qDebug() << query.lastError().text();
                 updateListWidgets();
             }
+
+            //refresh all issues
+
+
         }
     }
 }
