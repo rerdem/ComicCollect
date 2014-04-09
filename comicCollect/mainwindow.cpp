@@ -179,7 +179,7 @@ void MainWindow::updateListWidgets()
 
 void MainWindow::delSeries()
 {
-    if (lastSeries->text()==0) QMessageBox::information(this, "Error", "No issue selected.");
+    if (seriesList->count()==0) QMessageBox::information(this, "Error", "No issue selected.");
     else
     {
         bool deleteIssues=false;
@@ -238,7 +238,7 @@ void MainWindow::delSeries()
 
 void MainWindow::editSeries()
 {
-    if (lastSeries->text()==0) QMessageBox::information(this, "Error", "No series selected.");
+    if (seriesList->count()==0) QMessageBox::information(this, "Error", "No series selected.");
     else
     {
         int tempID=0;
@@ -415,7 +415,7 @@ void MainWindow::addSeries()
 
 void MainWindow::delIssue()
 {
-    if (lastIssue->text()==0) QMessageBox::information(this, "Error", "No issue selected.");
+    if (issuesList->count()==0) QMessageBox::information(this, "Error", "No issue selected.");
     else
     {
         QString itemText = lastIssue->text();
@@ -485,7 +485,7 @@ void MainWindow::delIssue()
 
 void MainWindow::editIssue()
 {
-    if (lastIssue->text()==0) QMessageBox::information(this, "Error", "No issue selected.");
+    if (issuesList->count()==0) QMessageBox::information(this, "Error", "No issue selected.");
     else
     {
         QString itemText = lastIssue->text();
@@ -861,6 +861,7 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
     db.setDatabaseName(dbpath);
 
     QString itemText = item->text();
+    bool isEmpty=true;
 
     if(db.open())
     {
@@ -876,6 +877,7 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
         {
             while (query.next())
             {
+                isEmpty=false;
                 QListWidgetItem *newItem = new QListWidgetItem;
                 QString itemText=query.value(0).toString() + " #" + query.value(1).toString();
                 if (query.value(2).toString() != "") itemText += "." + query.value(2).toString();
@@ -886,8 +888,13 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
         }
     }
     issuesList->sortItems(Qt::AscendingOrder);
-    updateIssueInfo(issuesList->item(0));
-    issuesList->item(0)->setSelected(true);
+    if (!isEmpty)
+    {
+        updateIssueInfo(issuesList->item(0));
+        issuesList->item(0)->setSelected(true);
+    }
+
+
     //lastIssue = issuesList->item(0);
 }
 
