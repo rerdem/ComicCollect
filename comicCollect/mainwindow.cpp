@@ -169,8 +169,10 @@ void MainWindow::updateListWidgets()
     seriesList->sortItems(Qt::AscendingOrder);
     issuesList->sortItems(Qt::AscendingOrder);
 
-    lastSeries = seriesList->item(0);
-    lastIssue = issuesList->item(0);
+    updateIssueList(seriesList->item(0));
+    seriesList->item(0)->setSelected(true);
+    updateIssueInfo(issuesList->item(0));
+    issuesList->item(0)->setSelected(true);
 }
 
 
@@ -840,6 +842,9 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
         }
     }
     issuesList->sortItems(Qt::AscendingOrder);
+    updateIssueInfo(issuesList->item(0));
+    issuesList->item(0)->setSelected(true);
+    //lastIssue = issuesList->item(0);
 }
 
 
