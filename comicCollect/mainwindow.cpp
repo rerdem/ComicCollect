@@ -9,9 +9,9 @@
 #include <QVector>
 #include <QSqlQuery>
 #include <QSqlError>
-//#include <QSqlRecord>
-//#include <QSqlTableModel>
 #include "mainwindow.h"
+
+//ComicCollect was created by Rona Erdem 2014
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -45,23 +45,20 @@ void MainWindow::createInterface()
     centralWidget = new QWidget(this);
     this->setCentralWidget( centralWidget );
 
-    //this->setFixedSize(800, 600);
-
-    //this->setWindowState(Qt::WindowMaximized);
-
     //create file menu
     QMenu *fileMenu = new QMenu(tr("&File"), this);
     menuBar()->addMenu(fileMenu);
     fileMenu->addAction(tr("&About"), this, SLOT(about()));
-    //fileMenu->addSeparator();
     fileMenu->addAction(tr("&Quit"), this, SLOT(close()));
 
+    //create series menu
     QMenu *seriesMenu = new QMenu(tr("&Series"), this);
     menuBar()->addMenu(seriesMenu);
     seriesMenu->addAction(tr("&Add Series"), this, SLOT(addSeries()));
     seriesMenu->addAction(tr("&Edit Series"), this, SLOT(editSeries()));
     seriesMenu->addAction(tr("&Delete Series"), this, SLOT(delSeries()));
 
+    //create issues menu
     QMenu *issueMenu = new QMenu(tr("&Issues"), this);
     menuBar()->addMenu(issueMenu);
     issueMenu->addAction(tr("&Add Issue"), this, SLOT(addIssue()));
@@ -79,6 +76,7 @@ void MainWindow::createInterface()
     issuesList->setSelectionMode(QAbstractItemView::SingleSelection);
     connect(issuesList, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(updateIssueInfo(QListWidgetItem *)));
 
+    //create and fill labels
     iNameLabel = new QLabel(this);
     iNumberLabel = new QLabel(this);
     iPubLabel = new QLabel(this);
@@ -99,6 +97,7 @@ void MainWindow::createInterface()
     iTagsLabel->setText("Tags: ");
     iSerialLabel->setText("Serial: ");
 
+    //create and fill issue layout
     issueBox = new QGridLayout();
     issueBox->addWidget(iNameLabel, 0,1,1,1);
     issueBox->addWidget(iNumberLabel, 0,2,1,1);
@@ -110,7 +109,7 @@ void MainWindow::createInterface()
     issueBox->addWidget(iSerialLabel, 3,1,1,1);
     issueBox->addWidget(iTagsLabel, 4,1,1,3);
 
-    //create and fill Layout
+    //create and fill main layout
     mainBox = new QGridLayout(centralWidget);
     mainBox->addWidget(seriesList, 1, 0, 5, 1);
     mainBox->addWidget(issuesList, 1, 1, 5, 1);
@@ -125,6 +124,7 @@ void MainWindow::updateListWidgets()
 {
     seriesList->clear();
     issuesList->clear();
+
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -157,7 +157,7 @@ void MainWindow::updateListWidgets()
             row = seriesList->row(seriesList->currentItem());
             seriesList->insertItem(row, newItem2);
         }
-        //fill issues with all issues
+
         if (query.exec("SELECT Name, Number, NumberAdd FROM issues"))
         {
             while (query.next())
@@ -204,25 +204,18 @@ void MainWindow::delSeries()
             delBox.setText("Do you want to delete all issues within this series?");
             delBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
             delBox.setDefaultButton(QMessageBox::No);
-
-
             // Show the dialog as modal
             if(delBox.exec() == QMessageBox::Yes) deleteIssues=true;
-
-
 
             QMessageBox msgBox;
             msgBox.setWindowTitle("Are you sure?");
             msgBox.setText("Do you still want to delete the series?");
             msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
             msgBox.setDefaultButton(QMessageBox::Cancel);
-
-
             // Show the dialog as modal
             if(msgBox.exec() == QMessageBox::Ok)
             {
                 QSqlQuery query(db);
-                // If the user didn't dismiss the dialog, do something
                 query.prepare("DELETE FROM series WHERE Name = :name");
                 query.bindValue(":name", lastSeries->text());
                 if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
@@ -262,10 +255,7 @@ void MainWindow::editSeries()
         {
 
             QDialog dialog(this);
-            // Use a layout allowing to have a label next to each field
             QFormLayout form(&dialog);
-
-            // Add some text above the fields
             form.addRow(new QLabel("Edit series:"));
 
             QString label1 = QString("Name: ");
@@ -293,30 +283,21 @@ void MainWindow::editSeries()
                 }
             }
 
-            // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
             QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                        Qt::Horizontal, &dialog);
             form.addRow(&buttonBox);
             QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
             QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
-
-            // Show the dialog as modal
             if (dialog.exec() == QDialog::Accepted)
             {
-                // If the user didn't dismiss the dialog, do something with the fields
-
                 query.prepare("UPDATE series SET Name = :name,Short = :short WHERE id = :id");
                 query.bindValue(":id", tempID);
                 query.bindValue(":name", lineEdit1->text());
                 query.bindValue(":short", lineEdit2->text());
                 if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
 
-
-
                 QVector<int> idVector;
                 QVector<QString> serialVector;
-
-
 
                 query.prepare("SELECT id,Box,Number,NumberAdd FROM issues WHERE Series = :series");
                 query.bindValue(":series", oldName);
@@ -331,14 +312,11 @@ void MainWindow::editSeries()
                         tempString += query.value(2).toString();
                         tempString += query.value(3).toString();
                         serialVector.append(tempString);
-
-                        //qDebug() << tempString;
                     }
                 }
 
                 for (int i = 0; i < idVector.size(); i++)
                 {
-
                     query.prepare("UPDATE issues SET Series=:series,Serial=:serial WHERE id=:id");
                     query.bindValue(":id", idVector.at(i));
                     query.bindValue(":series", lineEdit1->text());
@@ -346,15 +324,8 @@ void MainWindow::editSeries()
                     if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
                 }
 
-
-
-                //qDebug() << query.lastError().text();
                 updateListWidgets();
             }
-
-            //refresh all issues
-
-
         }
     }
 }
@@ -363,10 +334,7 @@ void MainWindow::editSeries()
 void MainWindow::addSeries()
 {
     QDialog dialog(this);
-    // Use a layout allowing to have a label next to each field
     QFormLayout form(&dialog);
-
-    // Add some text above the fields
     form.addRow(new QLabel("Add a new series:"));
 
     QString label1 = QString("Name: ");
@@ -379,17 +347,12 @@ void MainWindow::addSeries()
     form.addRow(label1, lineEdit1);
     form.addRow(label2, lineEdit2);
 
-
-    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                Qt::Horizontal, &dialog);
     form.addRow(&buttonBox);
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
     QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
-
-    // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // If the user didn't dismiss the dialog, do something with the fields
         //set dbpath
         QString dbpath;
         QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -400,13 +363,9 @@ void MainWindow::addSeries()
         db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbpath);
 
-
-
         if(db.open())
         {
             QSqlQuery query(db);
-            //fill issues with all issues
-
             query.prepare("INSERT INTO series (Name,Short) VALUES (:name,:short)");
             query.bindValue(":name", lineEdit1->text());
             query.bindValue(":short", lineEdit2->text());
@@ -438,24 +397,17 @@ void MainWindow::delIssue()
         db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbpath);
 
-
-
         if(db.open())
         {
-
             QMessageBox msgBox;
             msgBox.setWindowTitle("Are you sure?");
             msgBox.setText("Are you sure you wish to delete this item?");
             msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
             msgBox.setDefaultButton(QMessageBox::Cancel);
 
-
-
             QSqlQuery query(db);
-            //fill issues with all issues
             if (splitTwo.length() > 1)
             {
-                //qDebug() << splitTwo.at(1);
                 query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number AND NumberAdd = :number_add");
                 query.bindValue(":name", splitOne.at(0));
                 query.bindValue(":number", splitTwo.at(0));
@@ -469,17 +421,11 @@ void MainWindow::delIssue()
             }
             if (query.exec())
                 while (query.next()) tempID=query.value(0).toInt();
-
-
-
-            // Show the dialog as modal
             if(msgBox.exec() == QMessageBox::Ok)
             {
-                // If the user didn't dismiss the dialog, do something
                 query.prepare("DELETE FROM issues WHERE id=:id");
                 query.bindValue(":id", tempID);
                 if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
-
                 updateListWidgets();
             }
         }
@@ -508,16 +454,10 @@ void MainWindow::editIssue()
         db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbpath);
 
-
-
         if(db.open())
         {
-
             QDialog dialog(this);
-            // Use a layout allowing to have a label next to each field
             QFormLayout form(&dialog);
-
-            // Add some text above the fields
             form.addRow(new QLabel("Edit issue:"));
 
             QString label1 = QString("Name: ");
@@ -545,10 +485,10 @@ void MainWindow::editIssue()
             QLineEdit *lineEdit8 = new QLineEdit(&dialog);
 
             QSqlQuery query(db);
-            //fill issues with all issues
+
+            //fill fields with issue info
             if (splitTwo.length() > 1)
             {
-                //qDebug() << splitTwo.at(1);
                 query.prepare("SELECT * FROM issues WHERE Name = :name AND Number = :number AND NumberAdd = :number_add");
                 query.bindValue(":name", splitOne.at(0));
                 query.bindValue(":number", splitTwo.at(0));
@@ -576,7 +516,6 @@ void MainWindow::editIssue()
                 }
             }
 
-
             form.addRow(label1, lineEdit1);
             form.addRow(label2, lineEdit2);
             form.addRow(label3, lineEdit3);
@@ -586,17 +525,13 @@ void MainWindow::editIssue()
             form.addRow(label7, lineEdit7);
             form.addRow(label8, lineEdit8);
 
-            // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
             QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                        Qt::Horizontal, &dialog);
             form.addRow(&buttonBox);
             QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
             QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
-
-            // Show the dialog as modal
             if (dialog.exec() == QDialog::Accepted)
             {
-                // If the user didn't dismiss the dialog, do something with the fields
                 QString tempString=QString::number(lineEdit6->value());
                 query.prepare("SELECT Short FROM series WHERE Name=:name");
                 query.bindValue(":name", lineEdit4->text());
@@ -629,10 +564,7 @@ void MainWindow::editIssue()
 void MainWindow::addIssue()
 {
     QDialog dialog(this);
-    // Use a layout allowing to have a label next to each field
     QFormLayout form(&dialog);
-
-    // Add some text above the fields
     form.addRow(new QLabel("Add a new issue:"));
 
     QString label1 = QString("Name: ");
@@ -668,18 +600,12 @@ void MainWindow::addIssue()
     form.addRow(label7, lineEdit7);
     form.addRow(label8, lineEdit8);
 
-
-
-    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                Qt::Horizontal, &dialog);
     form.addRow(&buttonBox);
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
     QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
-
-    // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // If the user didn't dismiss the dialog, do something with the fields
         //set dbpath
         QString dbpath;
         QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -690,12 +616,9 @@ void MainWindow::addIssue()
         db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbpath);
 
-
-
         if(db.open())
         {
             QSqlQuery query(db);
-            //fill issues with all issues
 
             QString tempString=QString::number(lineEdit6->value());
 
@@ -718,19 +641,6 @@ void MainWindow::addIssue()
             query.bindValue(":tags", lineEdit8->text());
             query.bindValue(":serial", tempString);
             if (!query.exec()) QMessageBox::information(this, "Fail", "Fail");
-
-            /**
-            qDebug() << query.lastError().text();
-            qDebug() << lineEdit1->text();
-            qDebug() << lineEdit2->value();
-            qDebug() << lineEdit3->value();
-            qDebug() << lineEdit4->text();
-            qDebug() << lineEdit5->text();
-            qDebug() << lineEdit6->value();
-            qDebug() << lineEdit7->text();
-            qDebug() << lineEdit8->text();
-            qDebug() << tempString;
-            **/
         }
         updateListWidgets();
     }
@@ -740,10 +650,7 @@ void MainWindow::addIssue()
 void MainWindow::bulkAddIssue()
 {
     QDialog dialog(this);
-    // Use a layout allowing to have a label next to each field
     QFormLayout form(&dialog);
-
-    // Add some text above the fields
     form.addRow(new QLabel("Add a new issue:"));
 
     QString label1 = QString("Name: ");
@@ -786,18 +693,12 @@ void MainWindow::bulkAddIssue()
     form.addRow(label7, lineEdit7);
     form.addRow(label8, lineEdit8);
 
-
-
-    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                Qt::Horizontal, &dialog);
     form.addRow(&buttonBox);
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
     QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
-
-    // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // If the user didn't dismiss the dialog, do something with the fields
         //set dbpath
         QString dbpath;
         QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -808,13 +709,9 @@ void MainWindow::bulkAddIssue()
         db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbpath);
 
-
-
         if(db.open())
         {
             QSqlQuery query(db);
-            //fill issues with all issues
-
             QString shortForm="";
             query.prepare("SELECT Short FROM series WHERE Name=:name");
             query.bindValue(":name", lineEdit4->text());
@@ -854,6 +751,7 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
 {
     issuesList->clear();
     lastSeries=item;
+
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -870,7 +768,6 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
     if(db.open())
     {
         QSqlQuery query(db);
-        //fill issues with all issues
         if (itemText=="###All###") query.prepare("SELECT Name, Number, NumberAdd FROM issues");
         else
         {
@@ -905,15 +802,13 @@ void MainWindow::updateIssueList(QListWidgetItem *item)
         updateIssueInfo(issuesList->item(0));
         issuesList->item(0)->setSelected(true);
     }
-
-
-    //lastIssue = issuesList->item(0);
 }
 
 
 void MainWindow::updateIssueInfo(QListWidgetItem *item)
 {
     lastIssue=item;
+
     //set dbpath
     QString dbpath;
     QDir path = QDir::currentPath() + QDir::separator() +"collections";
@@ -1023,5 +918,5 @@ bool MainWindow::setupDb()
 
 void MainWindow::about()
 {
-    QMessageBox::information(this, "About", "This application was created by Rona Erdem.");
+    QMessageBox::information(this, "About", "This application was created by Rona Erdem in 2014.");
 }

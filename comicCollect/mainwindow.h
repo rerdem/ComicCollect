@@ -8,6 +8,8 @@
 #include <QListWidget>
 #include <QSqlDatabase>
 
+//ComicCollect was created by Rona Erdem 2014
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
